@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Airport Dashboard</title>
+    <style>
+        .container {
+            display: flex;
+        }
+        .column {
+            flex: 1;
+            margin: 10px;
+            padding: 10px;
+            border: 1px solid #ccc;
+        }
+        .scrollable {
+            height: 400px;
+            overflow-y: auto;
+        }
+    </style>
+    <script>
+        function fetchData() {
+            fetch('/uno/api/v1/order/getAllOrders')
+                .then(response => response.json())
+                .then(data => {
+                    const ordersDiv = document.getElementById('orders');
+                    ordersDiv.innerHTML = data.map(order => `
+                        <div>
+                            <p>ID: ${order.id}</p>
+                            <p>Plane ID: ${order.planeId}</p>
+                            <p>Gate: ${order.gate}</p>
+                            <p>Start Time: ${order.timeStart}</p>
+                            <p>Finish Time: ${order.timeFinish}</p>
+                            <p>Stage: ${order.stage}</p>
+                            <p>Fuel: ${order.fuel}</p>
+                            <p>Status: ${order.status}</p>
+                            <hr>
+                        </div>
+                    `).join('');
+                });
+
+            fetch('/uno/api/v1/microservice/getAllMicroservices')
+                .then(response => response.json())
+                .then(data => {
+                    const microservicesDiv = document.getElementById('microservices');
+                    microservicesDiv.innerHTML = data.map(ms => `
+                        <div>
+                            <p>ID: ${ms.id}</p>
+                            <p>Name: ${ms.name}</p>
+                            <p>Start Time: ${ms.startTime}</p>
+                            <p>Finish Time: ${ms.finishTime}</p>
+                            <p>Order ID: ${ms.order.id}</p>
+                            <hr>
+                        </div>
+                    `).join('');
+                });
+        }
+
+
+        setInterval(fetchData, 5000);
+
+        document.addEventListener('DOMContentLoaded', fetchData);
+    </script>
+</head>
+<body>
+<h1>Airport Dashboard</h1>
+<div class="container">
+    <div class="column">
+        <h2>Orders</h2>
+        <div id="orders" class="scrollable"></div>
+    </div>
+    <div class="column">
+        <h2>Microservices</h2>
+        <div id="microservices" class="scrollable"></div>
+    </div>
+</div>
+</body>
+</html>

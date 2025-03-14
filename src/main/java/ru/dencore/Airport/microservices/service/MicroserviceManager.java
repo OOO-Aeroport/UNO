@@ -2,6 +2,8 @@ package ru.dencore.Airport.microservices.service;
 
 import ru.dencore.Airport.microservices.model.Microservices;
 
+import java.util.List;
+
 public interface MicroserviceManager {
 
     /**
@@ -15,4 +17,10 @@ public interface MicroserviceManager {
      * Установить время завершения заказа на обслуживание сервисом
      */
     void setTimeOfEnd(String name, Long orderId);
+
+    /**
+     * Получить все микросервисы
+     */
+    List<Microservices> getAllMicroservices();
+
 }

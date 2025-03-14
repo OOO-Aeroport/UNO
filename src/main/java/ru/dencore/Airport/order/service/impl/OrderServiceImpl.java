@@ -4,7 +4,9 @@ import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import ru.dencore.Airport.exception.NotFoundException;
 import ru.dencore.Airport.feignclient.*;
+import ru.dencore.Airport.feignclient.dto.SuccessReportRequest;
 import ru.dencore.Airport.microservices.model.Microservices;
 import ru.dencore.Airport.microservices.service.MicroserviceManager;
 import ru.dencore.Airport.order.dao.OrderRepository;
@@ -35,6 +37,7 @@ public class OrderServiceImpl implements OrderService {
 
 
     @Override
+    @Transactional
     public Order saveOrder(Order order) {
 
         Order orderSaved = orderRepository.save(order);
@@ -44,12 +47,12 @@ public class OrderServiceImpl implements OrderService {
     }
 
     @Override
+    @Transactional
     public void broadcastOrder(Order order) {
 
         OrderRequest orderRequest = OrderRequest.builder()
                 .orderId(order.getId())
                 .planeId(order.getPlaneId())
-                .gate(order.getGate())
                 .build();
 
         for (String nameOfMicroservice : nameOfMicroservices) {
@@ -67,10 +70,10 @@ public class OrderServiceImpl implements OrderService {
         cateringClient.processOrder(orderRequest);
         log.info("Заказ с id: {} отправлен на службу питания", order.getId());
 
-        followMeClient.processOrder(orderRequest);
+        followMeClient.processOrder(order.getId(), order.getPlaneId());
         log.info("Заказ с id: {} отправлен на службу follow me", order.getId());
 
-        passengerAndBaggageClient.processOrder(orderRequest);
+        passengerAndBaggageClient.processOrder(order.getPlaneId(), order.getId());
         log.info("Заказ с id: {} отправлен на службу перевозки пассажиров и багажа", order.getId());
 
         tankerTruckClient.processOrder(order.getId(), order.getFuel(), order.getPlaneId());
@@ -85,11 +88,15 @@ public class OrderServiceImpl implements OrderService {
         Optional<Order> optionalOrder = orderRepository.findByIdWithLock(orderId);
 
         if (optionalOrder.isEmpty()) {
-            throw new RuntimeException();
+            throw new NotFoundException("Заказ с id: %d не найден".formatted(orderId));
         }
 
         Order order = optionalOrder.get();
         order.setStage(order.getStage() + 1);
+
+        if (order.getStage() == 4) {
+            order.setTimeFinish(LocalDateTime.now());
+        }
 
         orderRepository.save(order);
     }
@@ -99,15 +106,24 @@ public class OrderServiceImpl implements OrderService {
     public void findOrderToSend() {
 
         List<Order> ordersToSend = orderRepository.findByStageAndStatus(4, Status.WAITING_TO_PROCESS);
+        log.info("Найдены заказы для отправки: " + ordersToSend);
 
         for (Order order : ordersToSend) {
             order.setStatus(Status.SENDED);
 
-            //TODO: добавить id
-            tabloClient.successReport();
+            SuccessReportRequest successReportRequest = SuccessReportRequest.builder()
+                    .planeId(order.getPlaneId())
+                    .build();
+
+            tabloClient.successReport(successReportRequest);
         }
 
         orderRepository.saveAll(ordersToSend);
+    }
+
+    @Override
+    public List<Order> getAllOrders() {
+        return orderRepository.findAll();
     }
 
 

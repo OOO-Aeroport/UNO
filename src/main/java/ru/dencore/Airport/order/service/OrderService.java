@@ -1,8 +1,13 @@
 package ru.dencore.Airport.order.service;
 
-import ru.dencore.Airport.order.dto.OrderRequest;
+
 import ru.dencore.Airport.order.model.Order;
 
+import java.util.List;
+
+/**
+ * Сервис для работы с заказами
+ */
 public interface OrderService {
 
     /**
@@ -26,5 +31,13 @@ public interface OrderService {
      */
     void updateStage(Long orderId);
 
+    /**
+     * Поиск заказа для отправки
+     */
     void findOrderToSend();
+
+    /**
+     * Получить все заказы
+     */
+    List<Order> getAllOrders();
 }

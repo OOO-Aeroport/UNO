@@ -24,11 +24,6 @@ public class OrderRequest {
     private Long orderId;
 
     /**
-     * Номер стоянки
-     */
-    private Integer gate;
-
-    /**
      * id борта
      */
     @JsonProperty("plane_id")

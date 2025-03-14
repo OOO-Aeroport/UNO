@@ -5,6 +5,10 @@ import lombok.*;
 
 import java.time.LocalDateTime;
 
+
+/**
+ * Заказ на обслуживание
+ */
 @Entity
 @Table(name = "orders")
 @NoArgsConstructor

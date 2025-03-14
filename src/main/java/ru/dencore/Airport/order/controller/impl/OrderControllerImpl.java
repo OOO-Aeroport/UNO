@@ -12,6 +12,7 @@ import ru.dencore.Airport.order.model.Status;
 import ru.dencore.Airport.order.service.OrderService;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 
 @Slf4j
@@ -30,7 +31,6 @@ public class OrderControllerImpl implements OrderController {
         log.info("Поступил заказ на обслуживание " + orderDto);
 
         Order order = Order.builder()
-                .gate(orderDto.getGate())
                 .planeId(orderDto.getId())
                 .timeStart(LocalDateTime.now())
                 .status(Status.WAITING_TO_PROCESS)
@@ -49,6 +49,14 @@ public class OrderControllerImpl implements OrderController {
 
         orderService.updateStage(orderId);
         microserviceManager.setTimeOfEnd(name, orderId);
+
+    }
+
+    @Override
+    @GetMapping("/getAllOrders")
+    public List<Order> getAllOrders() {
+
+        return orderService.getAllOrders();
 
     }
 

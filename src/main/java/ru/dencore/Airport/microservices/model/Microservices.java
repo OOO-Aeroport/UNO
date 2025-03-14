@@ -6,6 +6,10 @@ import ru.dencore.Airport.order.model.Order;
 
 import java.time.LocalDateTime;
 
+
+/**
+ * Службы обслуживания самолёта
+ */
 @Entity
 @NoArgsConstructor
 @Getter
@@ -28,6 +32,7 @@ public class Microservices {
     private LocalDateTime finishTime;
 
     @ManyToOne
+    @JoinColumn(name = "order_id")
     private Order order;
 
 }

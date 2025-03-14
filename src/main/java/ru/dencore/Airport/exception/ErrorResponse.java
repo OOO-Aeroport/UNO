@@ -7,6 +7,10 @@ import lombok.Setter;
 
 import java.util.List;
 
+
+/**
+ * Сообщение об ошибке
+ */
 @Getter
 @Setter
 @NoArgsConstructor

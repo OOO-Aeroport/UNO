@@ -1,16 +1,22 @@
 package ru.dencore.Airport.feignclient;
 
-import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import org.springframework.cloud.openfeign.FeignClient;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import ru.dencore.Airport.order.dto.OrderRequest;
 
+
+/**
+ * Клиент для взаимодействия со службой Follow Me
+ */
 @FeignClient(name = "follow-me-client", url = "http://..")
 public interface FollowMeClient {
 
-    @PostMapping("")
-    void processOrder(@RequestBody OrderRequest orderRequest);
+    /**
+     * Отправить заказ на выполнение на follow me
+     * @param orderId id заказа
+     * @param planeId id самолёта
+     */
+    @PostMapping("/follow-me/handle-new-plane/{planeId}/{orderId}")
+    void processOrder(@PathVariable Long orderId, @PathVariable Integer planeId);
 
 }
