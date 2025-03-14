@@ -1,6 +1,7 @@
 package ru.dencore.Airport.feignclient;
 
 import org.springframework.cloud.openfeign.FeignClient;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -19,7 +20,7 @@ public interface PassengerAndBaggageClient {
      * @param flightId id самолёта
      * @param orderId  id заказа
      */
-    @PostMapping("/plane-info/{flightId}/{orderId}")
+    @GetMapping("/plane-info/{flightId}/{orderId}")
     void processOrder(@PathVariable Integer flightId, @PathVariable Long orderId);
 
 }

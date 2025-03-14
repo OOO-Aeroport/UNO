@@ -26,8 +26,6 @@ public class Order {
     @Column(name = "plane_id")
     private Integer planeId;
 
-    private Integer gate;
-
     @Column(name = "time_start")
     private LocalDateTime timeStart;
 

@@ -9,7 +9,7 @@ import ru.dencore.Airport.order.dto.OrderRequest;
 /**
  * Клиент для взаимодействия со службой питания
  */
-@FeignClient(name = "catering-client", url = "http://..")
+@FeignClient(name = "catering-client", url = "http://26.55.151.11:5555")
 public interface CateringClient {
 
     /**

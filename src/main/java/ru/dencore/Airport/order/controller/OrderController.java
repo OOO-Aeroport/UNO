@@ -22,16 +22,26 @@ public interface OrderController {
                     @ApiResponse(responseCode = "200", description = "Заказ успешно принят на выполнение."),
                     @ApiResponse(responseCode = "400", description = "Некорректные данные для заказа.")
             })
-    void processOrder(@Valid @RequestBody OrderDto orderDto);
+    void processOrder(@Valid @RequestBody OrderDto orderDto) throws InterruptedException;
 
     /**
      * Получить отчёт об успешном выполнении
      */
+    @Operation(summary = "Уведомить об успешном выполнении заказа",
+    responses = {
+            @ApiResponse(responseCode = "200", description = "Отчёт о выполнении успешно записан."),
+            @ApiResponse(responseCode = "400", description = "Некорректные данные для записи отчёта")
+    })
     void reportSuccessOrder(@PathVariable String name, @PathVariable Long orderId);
+
 
     /**
      * Получить все заказы
      */
+    @Operation(summary = "Получить все заказы",
+    responses = {
+            @ApiResponse(responseCode = "200", description = "Данные о заказах успешно возвращены")
+    })
     List<Order> getAllOrders();
 
 }

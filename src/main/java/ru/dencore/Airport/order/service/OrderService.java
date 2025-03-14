@@ -23,7 +23,7 @@ public interface OrderService {
      *
      * @param order заказ
      */
-    void broadcastOrder(Order order);
+    void broadcastOrder(Order order) throws InterruptedException;
 
     /**
      * Обновить этап обслуживания для заказа
@@ -40,4 +40,5 @@ public interface OrderService {
      * Получить все заказы
      */
     List<Order> getAllOrders();
+
 }

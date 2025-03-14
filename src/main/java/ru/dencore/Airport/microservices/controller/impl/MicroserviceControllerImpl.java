@@ -23,6 +23,9 @@ public class MicroserviceControllerImpl implements MicroserviceController {
     @Override
     @GetMapping("/getAllMicroservices")
     public List<Microservices> getAllMicroservices() {
+
+        log.info("Получен запрос на получение истории всех отчётов для dashboard");
+
         return microserviceManager.getAllMicroservices();
     }
 

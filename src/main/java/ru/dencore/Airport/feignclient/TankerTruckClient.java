@@ -7,14 +7,15 @@ import org.springframework.web.bind.annotation.PathVariable;
 /**
  * Клиент для взаимодействия с топливозаправщиком
  */
-@FeignClient(name = "tanker-truck-client", url = "http://..")
+@FeignClient(name = "tanker-truck-client", url = "http://26.230.224.169:5555")
 public interface TankerTruckClient {
 
 
     /**
      * Отправить заказ на выполнение на топливозаправщик
+     *
      * @param orderId id заказа
-     * @param fuel топливо, которое нужно заправить
+     * @param fuel    топливо, которое нужно заправить
      * @param planeId id самолёта
      */
     @GetMapping("/fueltruck/order/{orderId}/{fuel}/{planeId}")

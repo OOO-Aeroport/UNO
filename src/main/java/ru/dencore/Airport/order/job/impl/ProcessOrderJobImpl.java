@@ -16,9 +16,7 @@ public class ProcessOrderJobImpl implements ProcessOrderJob {
     @Override
     @Scheduled(fixedDelayString = "10000")
     public void processJob() {
-
         orderService.findOrderToSend();
-
     }
 
 

@@ -6,7 +6,6 @@ import org.springframework.web.bind.annotation.*;
 import ru.dencore.Airport.microservices.service.MicroserviceManager;
 import ru.dencore.Airport.order.controller.OrderController;
 import ru.dencore.Airport.order.dto.OrderDto;
-import ru.dencore.Airport.order.dto.OrderRequest;
 import ru.dencore.Airport.order.model.Order;
 import ru.dencore.Airport.order.model.Status;
 import ru.dencore.Airport.order.service.OrderService;
@@ -26,7 +25,7 @@ public class OrderControllerImpl implements OrderController {
 
     @Override
     @PostMapping("/process-order")
-    public void processOrder(OrderDto orderDto) {
+    public void processOrder(OrderDto orderDto) throws InterruptedException {
 
         log.info("Поступил заказ на обслуживание " + orderDto);
 
@@ -47,15 +46,19 @@ public class OrderControllerImpl implements OrderController {
     @GetMapping("/successReport/{orderId}/{name}")
     public void reportSuccessOrder(@PathVariable String name, @PathVariable Long orderId) {
 
+        log.info("Поступил отчёт о выполнении заказа с id=%d от %s".formatted(orderId, name));
+
         orderService.updateStage(orderId);
         microserviceManager.setTimeOfEnd(name, orderId);
 
+        log.info("Закончилась обработка отчёта о выполнении заказа с id=%d от %s".formatted(orderId, name));
     }
 
     @Override
     @GetMapping("/getAllOrders")
     public List<Order> getAllOrders() {
 
+        log.info("Получен запрос на получение заказов для dashboard");
         return orderService.getAllOrders();
 
     }

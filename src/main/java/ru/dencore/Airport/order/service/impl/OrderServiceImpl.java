@@ -6,7 +6,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import ru.dencore.Airport.exception.NotFoundException;
 import ru.dencore.Airport.feignclient.*;
-import ru.dencore.Airport.feignclient.dto.SuccessReportRequest;
 import ru.dencore.Airport.microservices.model.Microservices;
 import ru.dencore.Airport.microservices.service.MicroserviceManager;
 import ru.dencore.Airport.order.dao.OrderRepository;
@@ -18,6 +17,7 @@ import ru.dencore.Airport.order.service.OrderService;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.CompletableFuture;
 
 @Slf4j
 @Service
@@ -26,6 +26,7 @@ public class OrderServiceImpl implements OrderService {
 
     private final OrderRepository orderRepository;
     private final MicroserviceManager microserviceManager;
+    private final AsyncService asyncService;
 
     private final TankerTruckClient tankerTruckClient;
     private final PassengerAndBaggageClient passengerAndBaggageClient;
@@ -37,7 +38,7 @@ public class OrderServiceImpl implements OrderService {
 
 
     @Override
-    @Transactional
+
     public Order saveOrder(Order order) {
 
         Order orderSaved = orderRepository.save(order);
@@ -47,8 +48,7 @@ public class OrderServiceImpl implements OrderService {
     }
 
     @Override
-    @Transactional
-    public void broadcastOrder(Order order) {
+    public void broadcastOrder(Order order) throws InterruptedException {
 
         OrderRequest orderRequest = OrderRequest.builder()
                 .orderId(order.getId())
@@ -67,17 +67,10 @@ public class OrderServiceImpl implements OrderService {
 
         }
 
-        cateringClient.processOrder(orderRequest);
-        log.info("Заказ с id: {} отправлен на службу питания", order.getId());
-
-        followMeClient.processOrder(order.getId(), order.getPlaneId());
-        log.info("Заказ с id: {} отправлен на службу follow me", order.getId());
-
-        passengerAndBaggageClient.processOrder(order.getPlaneId(), order.getId());
-        log.info("Заказ с id: {} отправлен на службу перевозки пассажиров и багажа", order.getId());
-
-        tankerTruckClient.processOrder(order.getId(), order.getFuel(), order.getPlaneId());
-        log.info("Заказ с id: {} отправлен на топливозаправщик", order.getId());
+        CompletableFuture<Void> cateringFuture = asyncService.processCateringOrderAsync(orderRequest);
+        CompletableFuture<Void> followMeFuture = asyncService.processFollowMeOrderAsync(order.getId(), order.getPlaneId());
+//        CompletableFuture<Void> passengerAndBaggageFuture = asyncService.processPassengerAndBaggageOrderAsync(order.getPlaneId(), order.getId());
+//        CompletableFuture<Void> tankerTruckFuture = asyncService.processTankerTruckOrderAsync(order.getId(), order.getFuel(), order.getPlaneId());
 
     }
 
@@ -106,22 +99,31 @@ public class OrderServiceImpl implements OrderService {
     public void findOrderToSend() {
 
         List<Order> ordersToSend = orderRepository.findByStageAndStatus(4, Status.WAITING_TO_PROCESS);
-        log.info("Найдены заказы для отправки: " + ordersToSend);
 
-        for (Order order : ordersToSend) {
-            order.setStatus(Status.SENDED);
 
-            SuccessReportRequest successReportRequest = SuccessReportRequest.builder()
-                    .planeId(order.getPlaneId())
-                    .build();
+        if (!ordersToSend.isEmpty()) {
 
-            tabloClient.successReport(successReportRequest);
+            log.info("Найдены заказы для отправки: " + ordersToSend);
+
+            for (Order order : ordersToSend) {
+                order.setStatus(Status.SENDED);
+                tabloClient.successReport(order.getPlaneId());
+
+                log.info("Заказ с id=%d успешно отправился".formatted(order.getPlaneId()));
+            }
+
+            log.info("Список заказов " + ordersToSend + " успешно отправились");
+
+            orderRepository.saveAll(ordersToSend);
+
+            log.info("Статус списка заказов " + ordersToSend + " успешно поменялся в БД на SENDED");
         }
 
-        orderRepository.saveAll(ordersToSend);
+
     }
 
     @Override
+    @Transactional
     public List<Order> getAllOrders() {
         return orderRepository.findAll();
     }
