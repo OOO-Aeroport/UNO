@@ -28,30 +28,30 @@ public class AsyncService {
     private TankerTruckClient tankerTruckClient;
 
     public CompletableFuture<Void> processCateringOrderAsync(OrderRequest orderRequest) {
+        log.info("Заказ с id: {} отправлен на службу питания", orderRequest.getOrderId());
         return CompletableFuture.runAsync(() -> {
             cateringClient.processOrder(orderRequest);
-            log.info("Заказ с id: {} отправлен на службу питания", orderRequest.getOrderId());
         });
     }
 
     public CompletableFuture<Void> processFollowMeOrderAsync(Long orderId, Integer planeId) {
+        log.info("Заказ с id: {} отправлен на службу follow me", orderId);
         return CompletableFuture.runAsync(() -> {
             followMeClient.processOrder(orderId, planeId);
-            log.info("Заказ с id: {} отправлен на службу follow me", orderId);
         });
     }
 
     public CompletableFuture<Void> processPassengerAndBaggageOrderAsync(Integer planeId, Long orderId) {
+        log.info("Заказ с id: {} отправлен на службу перевозки пассажиров и багажа", orderId);
         return CompletableFuture.runAsync(() -> {
             passengerAndBaggageClient.processOrder(planeId, orderId);
-            log.info("Заказ с id: {} отправлен на службу перевозки пассажиров и багажа", orderId);
         });
     }
 
     public CompletableFuture<Void> processTankerTruckOrderAsync(Long orderId, Integer fuel, Integer planeId) {
+        log.info("Заказ с id: {} отправлен на топливозаправщик", orderId);
         return CompletableFuture.runAsync(() -> {
             tankerTruckClient.processOrder(orderId, fuel, planeId);
-            log.info("Заказ с id: {} отправлен на топливозаправщик", orderId);
         });
     }
 

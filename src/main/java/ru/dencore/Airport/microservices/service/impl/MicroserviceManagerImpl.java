@@ -20,7 +20,6 @@ public class MicroserviceManagerImpl implements MicroserviceManager {
     private final MicroserviceRepository microserviceRepository;
 
     @Override
-    @Transactional
     public void saveMicroservice(Microservices microservices) {
         microserviceRepository.save(microservices);
     }

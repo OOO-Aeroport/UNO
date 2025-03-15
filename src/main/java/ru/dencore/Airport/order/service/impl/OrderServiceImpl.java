@@ -67,10 +67,12 @@ public class OrderServiceImpl implements OrderService {
 
         }
 
+        log.info("Начинается отправка заказов на службы");
+
         CompletableFuture<Void> cateringFuture = asyncService.processCateringOrderAsync(orderRequest);
         CompletableFuture<Void> followMeFuture = asyncService.processFollowMeOrderAsync(order.getId(), order.getPlaneId());
-//        CompletableFuture<Void> passengerAndBaggageFuture = asyncService.processPassengerAndBaggageOrderAsync(order.getPlaneId(), order.getId());
-//        CompletableFuture<Void> tankerTruckFuture = asyncService.processTankerTruckOrderAsync(order.getId(), order.getFuel(), order.getPlaneId());
+        CompletableFuture<Void> passengerAndBaggageFuture = asyncService.processPassengerAndBaggageOrderAsync(order.getPlaneId(), order.getId());
+        CompletableFuture<Void> tankerTruckFuture = asyncService.processTankerTruckOrderAsync(order.getId(), order.getFuel(), order.getPlaneId());
 
     }
 

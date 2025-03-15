@@ -7,7 +7,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 /**
  * Клиент для взаимодействия с топливозаправщиком
  */
-@FeignClient(name = "tanker-truck-client", url = "http://26.230.224.169:5555")
+@FeignClient(name = "tanker-truck-client", url = "http://26.231.166.224:5555")
 public interface TankerTruckClient {
 
 

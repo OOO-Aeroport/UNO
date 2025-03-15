@@ -52,6 +52,7 @@ public class OrderControllerImpl implements OrderController {
         microserviceManager.setTimeOfEnd(name, orderId);
 
         log.info("Закончилась обработка отчёта о выполнении заказа с id=%d от %s".formatted(orderId, name));
+
     }
 
     @Override

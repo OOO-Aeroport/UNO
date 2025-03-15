@@ -11,7 +11,7 @@ import ru.dencore.Airport.order.dto.OrderRequest;
 /**
  * Клиент для взаимодействия со службой перевозки пассажиров и багажа
  */
-@FeignClient(name = "passenger-and-baggage-client", url = "http://..")
+@FeignClient(name = "passenger-and-baggage-client", url = "http://26.132.135.106:5555")
 public interface PassengerAndBaggageClient {
 
     /**
