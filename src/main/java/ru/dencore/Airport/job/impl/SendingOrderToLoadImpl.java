@@ -1,22 +1,22 @@
-package ru.dencore.Airport.order.job.impl;
+package ru.dencore.Airport.job.impl;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
-import ru.dencore.Airport.order.job.ProcessOrderJob;
+import ru.dencore.Airport.job.SendingOrderToLoad;
 import ru.dencore.Airport.order.service.OrderService;
 
 
 @Service
 @RequiredArgsConstructor
-public class ProcessOrderJobImpl implements ProcessOrderJob {
+public class SendingOrderToLoadImpl implements SendingOrderToLoad {
 
     private final OrderService orderService;
 
     @Override
-    @Scheduled(fixedDelayString = "10000")
-    public void processJob() {
-        orderService.findOrderToSend();
+    @Scheduled(fixedDelayString = "5000")
+    public void sendingOrderToLoad() {
+        orderService.findOrderToSendLoad();
     }
 
 

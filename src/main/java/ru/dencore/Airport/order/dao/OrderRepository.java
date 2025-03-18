@@ -22,4 +22,6 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     List<Order> findByStageAndStatus(Integer stage, Status status);
 
+    Optional<Order> findByPlaneId(Integer planeId);
+
 }

@@ -5,12 +5,10 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.*;
 import ru.dencore.Airport.microservices.service.MicroserviceManager;
 import ru.dencore.Airport.order.controller.OrderController;
-import ru.dencore.Airport.order.dto.OrderDto;
+import ru.dencore.Airport.order.dto.RequestFromRegistration;
 import ru.dencore.Airport.order.model.Order;
-import ru.dencore.Airport.order.model.Status;
 import ru.dencore.Airport.order.service.OrderService;
 
-import java.time.LocalDateTime;
 import java.util.List;
 
 
@@ -24,36 +22,95 @@ public class OrderControllerImpl implements OrderController {
     private final MicroserviceManager microserviceManager;
 
     @Override
-    @PostMapping("/process-order")
-    public void processOrder(OrderDto orderDto) throws InterruptedException {
+    @PostMapping("/successReport/{orderId}/follow-me")
+    public void reportSuccessOrderFromFollowMe(@PathVariable Long orderId) {
 
-        log.info("Поступил заказ на обслуживание " + orderDto);
+        log.info("Поступил отчёт о выполнении от follow me по id заказу равному %d".formatted(orderId));
 
-        Order order = Order.builder()
-                .planeId(orderDto.getId())
-                .timeStart(LocalDateTime.now())
-                .status(Status.WAITING_TO_PROCESS)
-                .fuel(orderDto.getMaxFuel() - orderDto.getCurrentFuel())
-                .stage(0)
-                .build();
-
-        Order orderSaved = orderService.saveOrder(order);
-
-        orderService.broadcastOrder(orderSaved);
+        orderService.requestOrderToCateringAndPBC(orderId);
     }
 
     @Override
-    @GetMapping("/successReport/{orderId}/{name}")
-    public void reportSuccessOrder(@PathVariable String name, @PathVariable Long orderId) {
+    @PostMapping("/successReport/{orderId}/baggage-discharge")
+    public void reportSuccessOrderFromBaggageDischarge(@PathVariable Long orderId) {
 
-        log.info("Поступил отчёт о выполнении заказа с id=%d от %s".formatted(orderId, name));
+        log.info("Получен отчёт о выполнении заказа от baggage-discharge по id заказу равному %d".formatted(orderId));
 
         orderService.updateStage(orderId);
-        microserviceManager.setTimeOfEnd(name, orderId);
-
-        log.info("Закончилась обработка отчёта о выполнении заказа с id=%d от %s".formatted(orderId, name));
 
     }
+
+    @Override
+    @PostMapping("/successReport/{orderId}/passegers-discharge")
+    public void reportSuccessOrderFromPassengersDischarge(@PathVariable Long orderId) {
+
+        log.info("Получен отчёт о выполнении заказа от passengers-discharge по id заказу равному %d".formatted(orderId));
+
+        orderService.updateStage(orderId);
+
+        // передать заказ на топливозаправщик
+
+        orderService.requestOrderToTankerTruck(orderId);
+
+    }
+
+    @Override
+    @PostMapping("/successReport/{orderId}/tanker-truck")
+    public void reportSuccessOrderFromTankerTruck(@PathVariable Long orderId) {
+
+        log.info("Получен отчёт о выполнении заказа от tanker-truck по id заказу равному %d".formatted(orderId));
+
+        orderService.updateStage(orderId);
+
+    }
+
+    @Override
+    @PostMapping("/successReport/{orderId}/passegers-loading")
+    public void reportSuccessOrderFromPassengersLoading(@PathVariable Long orderId) {
+
+        log.info("Получен отчёт о выполнении заказа от passegers-loading по id заказу равному %d".formatted(orderId));
+
+        orderService.updateStage(orderId);
+    }
+
+    @Override
+    @PostMapping("/successReport/{orderId}/baggage-loading")
+    public void reportSuccessFromBaggageLoading(@PathVariable Long orderId) {
+
+        log.info("Получен отчёт о выполнении заказа от passegers-loading по id заказу равному %d".formatted(orderId));
+
+        orderService.updateStage(orderId);
+
+    }
+
+    @Override
+    @PostMapping("/successReport/{orderId}/catering-unload")
+    public void reportSuccessFromCateringUnload(@PathVariable Long orderId) {
+
+        log.info("Получен отчёт о выполнении заказа от catering-unload по id заказу равному %d".formatted(orderId));
+
+        orderService.updateStage(orderId);
+    }
+
+    @Override
+    @PostMapping("/successReport/{orderId}/catering-load")
+    public void reportSuccessFromCateringLoad(@PathVariable Long orderId) {
+
+        log.info("Получен отчёт о выполнении заказа от catering-load по id заказу равному %d".formatted(orderId));
+
+        orderService.updateStage(orderId);
+    }
+
+    @Override
+    @PostMapping("/order-from-registration")
+    public void getOrderRequestFromRegistration(@RequestBody RequestFromRegistration requestFromRegistration) {
+
+
+        log.info("Пришёл заказ от регистрации с planeId = %d".formatted(requestFromRegistration.getFlightId()));
+
+        orderService.requestOrderToCateringAndPBCLoad(requestFromRegistration);
+    }
+
 
     @Override
     @GetMapping("/getAllOrders")

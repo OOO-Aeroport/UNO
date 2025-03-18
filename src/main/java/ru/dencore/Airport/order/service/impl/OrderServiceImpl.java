@@ -6,10 +6,14 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import ru.dencore.Airport.exception.NotFoundException;
 import ru.dencore.Airport.feignclient.*;
-import ru.dencore.Airport.microservices.model.Microservices;
+import ru.dencore.Airport.feignclient.dto.LoadOrderRequest;
+import ru.dencore.Airport.feignclient.dto.LoadingPassengersRequest;
+import ru.dencore.Airport.feignclient.dto.PassengersToLoad;
+import ru.dencore.Airport.feignclient.dto.UnloadOrderRequestToCatering;
 import ru.dencore.Airport.microservices.service.MicroserviceManager;
 import ru.dencore.Airport.order.dao.OrderRepository;
 import ru.dencore.Airport.order.dto.OrderRequest;
+import ru.dencore.Airport.order.dto.RequestFromRegistration;
 import ru.dencore.Airport.order.model.Order;
 import ru.dencore.Airport.order.model.Status;
 import ru.dencore.Airport.order.service.OrderService;
@@ -19,6 +23,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 
+
 @Slf4j
 @Service
 @RequiredArgsConstructor
@@ -26,13 +31,14 @@ public class OrderServiceImpl implements OrderService {
 
     private final OrderRepository orderRepository;
     private final MicroserviceManager microserviceManager;
-    private final AsyncService asyncService;
 
     private final TankerTruckClient tankerTruckClient;
     private final PassengerAndBaggageClient passengerAndBaggageClient;
     private final FollowMeClient followMeClient;
     private final CateringClient cateringClient;
     private final TabloClient tabloClient;
+    private final DispatcherClient dispatcherClient;
+    private final PlaneClient planeClient;
 
     private final static List<String> nameOfMicroservices = List.of(new String[]{"tanker-truck", "passenger-and-baggage", "follow-me", "catering-service"});
 
@@ -47,34 +53,6 @@ public class OrderServiceImpl implements OrderService {
         return orderSaved;
     }
 
-    @Override
-    public void broadcastOrder(Order order) throws InterruptedException {
-
-        OrderRequest orderRequest = OrderRequest.builder()
-                .orderId(order.getId())
-                .planeId(order.getPlaneId())
-                .build();
-
-        for (String nameOfMicroservice : nameOfMicroservices) {
-
-            Microservices microservices = Microservices.builder()
-                    .name(nameOfMicroservice)
-                    .startTime(LocalDateTime.now())
-                    .order(order)
-                    .build();
-
-            microserviceManager.saveMicroservice(microservices);
-
-        }
-
-        log.info("Начинается отправка заказов на службы");
-
-        CompletableFuture<Void> cateringFuture = asyncService.processCateringOrderAsync(orderRequest);
-        CompletableFuture<Void> followMeFuture = asyncService.processFollowMeOrderAsync(order.getId(), order.getPlaneId());
-        CompletableFuture<Void> passengerAndBaggageFuture = asyncService.processPassengerAndBaggageOrderAsync(order.getPlaneId(), order.getId());
-        CompletableFuture<Void> tankerTruckFuture = asyncService.processTankerTruckOrderAsync(order.getId(), order.getFuel(), order.getPlaneId());
-
-    }
 
     @Override
     @Transactional
@@ -89,8 +67,11 @@ public class OrderServiceImpl implements OrderService {
         Order order = optionalOrder.get();
         order.setStage(order.getStage() + 1);
 
-        if (order.getStage() == 4) {
+        if (order.getStage() == 8) {
             order.setTimeFinish(LocalDateTime.now());
+            order.setStatus(Status.READY_FOR_TAKEOFF);
+        } else if (order.getStage() == 5) {
+            order.setStatus(Status.AWAITING_DEPARTURE_AFTER_UNLOADING);
         }
 
         orderRepository.save(order);
@@ -98,27 +79,196 @@ public class OrderServiceImpl implements OrderService {
 
     @Override
     @Transactional
-    public void findOrderToSend() {
+    public List<Order> getAllOrders() {
+        return orderRepository.findAll();
+    }
 
-        List<Order> ordersToSend = orderRepository.findByStageAndStatus(4, Status.WAITING_TO_PROCESS);
+
+    @Override
+    public void requestPermissionToLand(Order order) {
+
+        List<Integer> dataForLand = dispatcherClient.requestPermission(order.getPlaneId());
+
+        // 1 значение - куда самолет приземлится
+        // 2 значение - место в которое самолет должен прибыть для обслуживания
+
+        log.info("Для самолёта с id = %d диспетчер прислал следующие данные для посадки %s".formatted(order.getPlaneId(), dataForLand));
 
 
-        if (!ordersToSend.isEmpty()) {
+        // отправляем данные для посадки самолёту
+        planeClient.sendLandingApprovalData(dataForLand);
 
-            log.info("Найдены заказы для отправки: " + ordersToSend);
+        if (dataForLand.get(0) == -1) {
 
-            for (Order order : ordersToSend) {
-                order.setStatus(Status.SENDED);
+            log.info("Диспетчер не дал разрешение на посадку самолёта с id = %d".formatted(order.getPlaneId()));
+
+            order.setStatus(Status.NO_PERMISSION);
+            order.setTimeFinish(LocalDateTime.now());
+
+            orderRepository.save(order);
+
+        } else {
+
+            // отдаём заказ на follow-me
+            requestOrderToFollowMe(order);
+        }
+
+
+    }
+
+    @Override
+    public void requestOrderToFollowMe(Order order) {
+
+        order.setStatus(Status.DURING_FOLLOW_ME);
+        Order orderSaved = orderRepository.save(order);
+
+        // отправляем заказ на follow me
+        CompletableFuture.runAsync(() -> {
+            log.info("Отдаём заказ на самолёт с id = %d на follow me".formatted(orderSaved.getPlaneId()));
+            followMeClient.processOrder(orderSaved.getId(), orderSaved.getPlaneId());
+        });
+
+
+    }
+
+    @Override
+    public void requestOrderToCateringAndPBC(Long orderId) {
+
+        Order order = orderRepository.findById(orderId).orElseThrow(() -> new NotFoundException("Заказ с id = %d не найден".formatted(orderId)));
+
+        order.setStage(1);
+        order.setStatus(Status.DURING_UNLOADING);
+
+        Order orderSaved = orderRepository.save(order);
+
+        // отдадим заказ на службу питания на разгрузку
+        UnloadOrderRequestToCatering unloadOrderRequestToCatering = UnloadOrderRequestToCatering.builder()
+                .orderId(orderSaved.getId())
+                .planeId(orderSaved.getPlaneId())
+                .build();
+
+        // отдаём заказ на службу питания
+
+        CompletableFuture.runAsync(() -> {
+
+            log.info("Отдаём заказ с id заказа = %d и id самолёта = %d на службу питания для разгрузки".formatted(orderSaved.getId(), orderSaved.getPlaneId()));
+
+            cateringClient.processOrder(unloadOrderRequestToCatering);
+        });
+
+        // отдадим заказ на разгрузку на службу перевозки багажа
+
+        OrderRequest orderRequest = OrderRequest.builder()
+                .orderId(orderSaved.getId())
+                .planeId(orderSaved.getPlaneId())
+                .build();
+
+        // отдаём заказ на разгрузку багажа
+
+        CompletableFuture.runAsync(() -> {
+
+            log.info("Отдаём заказ с id заказа = %d и id самолёта = %d на разгрузку багажа".formatted(orderSaved.getId(), orderSaved.getPlaneId()));
+
+            passengerAndBaggageClient.requestOrderToPassengersDischarge(orderRequest);
+        });
+
+
+        // отдаём заказ на разгрузку пассажиров
+
+        CompletableFuture.runAsync(() -> {
+
+            log.info("Отдаём заказ с id заказа = %d и id самолёта = %d на разгрузку пассажиров".formatted(orderSaved.getId(), orderSaved.getPlaneId()));
+
+            passengerAndBaggageClient.requestOrderToPassengersDischarge(orderRequest);
+        });
+
+
+    }
+
+    @Override
+    public void requestOrderToTankerTruck(Long orderId) {
+
+        Order order = orderRepository.findById(orderId).orElseThrow(() -> new NotFoundException("Заказ с id = %d не найден".formatted(orderId)));
+
+        // отдаём заказ на топливозаправщик
+
+        CompletableFuture.runAsync(() -> {
+
+            log.info("Отдаём заказ с id заказа = %d и id самолёта = %d на топливозаправщик".formatted(order.getId(), order.getPlaneId()));
+
+            tankerTruckClient.processOrder(order.getId(), order.getFuel(), order.getPlaneId());
+        });
+
+    }
+
+    @Override
+    public void requestOrderToCateringAndPBCLoad(RequestFromRegistration requestFromRegistration) {
+
+        Order order = orderRepository.findByPlaneId(requestFromRegistration.getFlightId()).orElseThrow(() -> new NotFoundException(("Заказ с planeId = %d не существует").formatted(requestFromRegistration.getFlightId())));
+
+        // нужно раздать заказ на службу питания на загрузку
+        LoadOrderRequest loadOrderRequest = LoadOrderRequest.builder()
+                .orderId(order.getId())
+                .planeId(order.getPlaneId())
+                .quantity(requestFromRegistration.getFood())
+                .build();
+
+        CompletableFuture.runAsync(() -> {
+
+            log.info("Отдаём заказ с id заказа = %d и id самолёта = %d на службу питания для загрузки".formatted(order.getId(), order.getPlaneId()));
+            cateringClient.processOrder(loadOrderRequest);
+        });
+
+        OrderRequest orderRequest = OrderRequest
+                .builder()
+                .orderId(order.getId())
+                .planeId(order.getPlaneId())
+                .build();
+
+
+        // нужно раздать заказ на службу загрузки багажа
+        CompletableFuture.runAsync(() -> {
+
+            log.info("Отдаём заказ с id заказа = %d и id самолёта = %d на службу загрузки багажа".formatted(order.getId(), order.getPlaneId()));
+
+            passengerAndBaggageClient.requestOrderToBaggageLoading(orderRequest);
+
+        });
+
+        LoadingPassengersRequest loadingPassengersRequest = LoadingPassengersRequest.builder()
+                .orderId(order.getId())
+                .planeId(order.getPlaneId())
+                .passengers(requestFromRegistration.getPassengers().stream()
+                        .map(passengers -> new PassengersToLoad(passengers.getPassengerId()))
+                        .toList())
+                .build();
+
+        // нужно раздать заказ на службу загрузки пассажиров
+        CompletableFuture.runAsync(() -> {
+
+            log.info("Отдаём заказ с id заказа = %d и id самолёта = %d на службу загрузки пассажиров".formatted(order.getId(), order.getPlaneId()));
+            passengerAndBaggageClient.requestOrderToPassengersLoading(loadingPassengersRequest);
+        });
+
+
+    }
+
+    @Override
+    @Transactional
+    public void findOrderToSendLoad() {
+
+        List<Order> orderList = orderRepository.findByStageAndStatus(5, Status.AWAITING_DEPARTURE_AFTER_UNLOADING);
+
+        if (!orderList.isEmpty()) {
+            log.info("Найдены следующие заказы, которые прошли разгрузку и готовы для отправки на регистрацию: " + orderList);
+
+            for (Order order : orderList) {
                 tabloClient.successReport(order.getPlaneId());
-
-                log.info("Заказ с id=%d успешно отправился".formatted(order.getPlaneId()));
+                log.info("Заказ с planeId = %d отправлен на регистрацию (на табло)".formatted(order.getPlaneId()));
+                order.setStatus(Status.DURING_LOADING);
+                orderRepository.save(order);
             }
 
-            log.info("Список заказов " + ordersToSend + " успешно отправились");
-
-            orderRepository.saveAll(ordersToSend);
-
-            log.info("Статус списка заказов " + ordersToSend + " успешно поменялся в БД на SENDED");
         }
 
 
@@ -126,8 +276,24 @@ public class OrderServiceImpl implements OrderService {
 
     @Override
     @Transactional
-    public List<Order> getAllOrders() {
-        return orderRepository.findAll();
+    public void findOrderToFly() {
+
+        List<Order> orderList = orderRepository.findByStageAndStatus(8, Status.READY_FOR_TAKEOFF);
+
+        if (!orderList.isEmpty()) {
+
+            log.info("Найдены следующие заказы, которые прошли регистрацию и загрузку и самолёты готовы взлетать: " + orderList);
+
+            for (Order order : orderList) {
+
+                //TODO: поправить метод, когда станет известно сигнатура
+                planeClient.sendOrderToFly();
+                order.setStatus(Status.SENDED);
+                orderRepository.save(order);
+
+            }
+
+        }
     }
 
 

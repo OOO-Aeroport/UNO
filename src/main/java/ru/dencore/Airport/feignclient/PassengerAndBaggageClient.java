@@ -1,10 +1,9 @@
 package ru.dencore.Airport.feignclient;
 
 import org.springframework.cloud.openfeign.FeignClient;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import ru.dencore.Airport.feignclient.dto.LoadingPassengersRequest;
 import ru.dencore.Airport.order.dto.OrderRequest;
 
 
@@ -15,12 +14,28 @@ import ru.dencore.Airport.order.dto.OrderRequest;
 public interface PassengerAndBaggageClient {
 
     /**
-     * Отправить заказ на выполнение на службу перевозки пассажиров и багажа
-     *
-     * @param flightId id самолёта
-     * @param orderId  id заказа
+     * Отправить заказ на выполнение на СПБП на разгрузку багажа
      */
-    @GetMapping("/plane-info/{flightId}/{orderId}")
-    void processOrder(@PathVariable Integer flightId, @PathVariable Long orderId);
+    @PostMapping("/baggage-discharge")
+    void requestOrderToBaggageDischarge(@RequestBody OrderRequest orderRequest);
+
+    /**
+     * Отправить заказ на выполнение на СПБП на загрузку багажа
+     */
+    @PostMapping("/baggage-loading")
+    void requestOrderToBaggageLoading(@RequestBody OrderRequest orderRequest);
+
+
+    /**
+     * Отправить заказ на выполнение на СПБП на разгрузку пассажиров
+     */
+    @PostMapping("/passegers-discharge")
+    void requestOrderToPassengersDischarge(@RequestBody OrderRequest orderRequest);
+
+    /**
+     * Отправить заказ на выполнение на СПБП на загрузку пассажиров
+     */
+    @PostMapping("/passegers-loading")
+    void requestOrderToPassengersLoading(@RequestBody LoadingPassengersRequest loadingPassengersRequest);
 
 }

@@ -3,6 +3,8 @@ package ru.dencore.Airport.feignclient;
 import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import ru.dencore.Airport.feignclient.dto.LoadOrderRequest;
+import ru.dencore.Airport.feignclient.dto.UnloadOrderRequestToCatering;
 import ru.dencore.Airport.order.dto.OrderRequest;
 
 
@@ -13,10 +15,12 @@ import ru.dencore.Airport.order.dto.OrderRequest;
 public interface CateringClient {
 
     /**
-     * Отправить заказ на выполнение на службу питания
-     * @param orderRequest заказ
+     * Отправить заказ на выполнение на службу питания на разгрузку
      */
-    @PostMapping("/catering-service/api/v1/order")
-    void processOrder(@RequestBody OrderRequest orderRequest);
+    @PostMapping("/catering-service/api/v1/unload-order")
+    void processOrder(@RequestBody UnloadOrderRequestToCatering unloadOrderRequestToCatering);
+
+    @PostMapping("/catering-service/api/v1/load-order")
+    void processOrder(@RequestBody LoadOrderRequest loadOrderRequest);
 
 }

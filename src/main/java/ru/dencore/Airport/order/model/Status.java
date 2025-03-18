@@ -6,12 +6,43 @@ package ru.dencore.Airport.order.model;
 public enum Status {
 
     /**
-     * Заказ в процессе выполнения
+     * Самолёту не дали разрешение на посадку
      */
-    WAITING_TO_PROCESS,
+    NO_PERMISSION,
 
     /**
-     * Заказ отправлен
+     * Самолёт в процессе получения разрешения на посадку
      */
-    SENDED
+    DURING_PERMISSION_TO_LAND,
+
+    /**
+     * Самолёт в процессе сопровождения follow me
+     */
+    DURING_FOLLOW_ME,
+
+    /**
+     * Самолёт в процессе разгрузки
+     */
+    DURING_UNLOADING,
+
+    /**
+     * Самолёт ожидает отправки на регистрацию после разгрузки
+     */
+    AWAITING_DEPARTURE_AFTER_UNLOADING,
+
+    /**
+     * Самолёт в процессе загрузки
+     */
+    DURING_LOADING,
+
+    /**
+     * Самолёт готов к взлёту
+     */
+    READY_FOR_TAKEOFF,
+
+    /**
+     * Самолёт улетел
+     */
+    SENDED,
+
 }

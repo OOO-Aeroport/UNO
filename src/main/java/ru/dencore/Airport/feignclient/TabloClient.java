@@ -2,7 +2,6 @@ package ru.dencore.Airport.feignclient;
 
 import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.web.bind.annotation.*;
-import ru.dencore.Airport.feignclient.dto.SuccessReportRequest;
 
 
 /**
@@ -12,9 +11,9 @@ import ru.dencore.Airport.feignclient.dto.SuccessReportRequest;
 public interface TabloClient {
 
     /**
-     * Отправить отчёт об успешном выполнении заказа
+     * Отправить отчёт о самолёте, который прошёл разгрузку и готов для регистрации
      */
-    @PutMapping("/departure-board/planes/{id}/handled")
-    void successReport(@PathVariable Integer id);
+    @PutMapping("/dep-board/api/v1/airplanes/{airplaneId}/ready")
+    void successReport(@PathVariable Integer airplaneId);
 
 }
