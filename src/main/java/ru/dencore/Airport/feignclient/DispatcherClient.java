@@ -8,7 +8,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 
 import java.util.List;
 
-@FeignClient(name = "dispatcher-client", url = "http://26.55.151.11:5555")
+@FeignClient(name = "dispatcher-client", url = "http://26.21.3.228:5555")
 public interface DispatcherClient {
 
     @GetMapping("/dispatcher/plane/{planeId}")

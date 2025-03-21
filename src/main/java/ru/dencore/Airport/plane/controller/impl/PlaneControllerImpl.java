@@ -24,23 +24,23 @@ public class PlaneControllerImpl implements PlaneController {
 
     @PostMapping("/{planeId}/{fuel}/create-plane")
     @Override
-    public void createPlane(@PathVariable Integer fuel, @PathVariable Long planeId) {
+    public void createPlane(@PathVariable Integer fuel, @PathVariable Integer planeId) {
 
-        log.info("Самолёт с id = %d просит разрешение на посадку.".formatted(planeId));
+        log.info("Самолёт с id = %d прибыл в аэропорт.".formatted(planeId));
 
         // нужно сохранить заказ
         Order order = Order.builder()
                 .fuel(fuel)
-                .id(planeId)
+                .planeId(planeId)
                 .stage(0)
-                .status(Status.DURING_PERMISSION_TO_LAND)
+                .status(Status.DURING_FOLLOW_ME)
                 .timeStart(LocalDateTime.now())
                 .build();
 
         Order orderSaved = orderService.saveOrder(order);
 
-        // теперь нужно получить разрешение на посадку
-        orderService.requestPermissionToLand(orderSaved);
+        // отправляем заказ на follow me
+        orderService.requestOrderToFollowMe(orderSaved);
 
     }
 

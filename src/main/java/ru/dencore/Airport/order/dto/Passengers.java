@@ -8,7 +8,9 @@ import lombok.*;
 @Getter
 @AllArgsConstructor
 @Builder
+@ToString
 public class Passengers {
 
     private Integer passengerId;
+
 }

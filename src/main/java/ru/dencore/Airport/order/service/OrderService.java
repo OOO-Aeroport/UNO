@@ -33,31 +33,24 @@ public interface OrderService {
 
     /**
      * Начать первую стадию обработки заказа
-     * 1) Запросить добро на посадку
-     * 2) Отдать данные для посадки самолёту
-     */
-    void requestPermissionToLand(Order order);
-
-    /**
-     * Начать вторую стадию обработки заказа
      * Отдать заказ на follow me
      */
     void requestOrderToFollowMe(Order order);
 
     /**
-     * Начать третью стадию обработки заказа
+     * Начать вторую стадию обработки заказа
      * Отдать заказ на разгрузку на службу питания и СПБП (служба перевозки багажа и пассажиров)
      */
     void requestOrderToCateringAndPBC(Long orderId);
 
     /**
-     * Начать четвертую стадию обработки заказа
+     * Начать третью стадию обработки заказа
      * Отдать заказ на топливозаправщик
      */
     void requestOrderToTankerTruck(Long orderId);
 
     /**
-     * Начать пятую стадию обработки заказа
+     * Начать четвертую стадию обработки заказа
      * Отдать заказ на загрузку на службу питания и службу загрузки багажа и пассажиров
      */
     void requestOrderToCateringAndPBCLoad(RequestFromRegistration requestFromRegistration);

@@ -41,7 +41,7 @@ public class OrderControllerImpl implements OrderController {
     }
 
     @Override
-    @PostMapping("/successReport/{orderId}/passegers-discharge")
+    @PostMapping("/successReport/{orderId}/passengers-discharge")
     public void reportSuccessOrderFromPassengersDischarge(@PathVariable Long orderId) {
 
         log.info("Получен отчёт о выполнении заказа от passengers-discharge по id заказу равному %d".formatted(orderId));
@@ -65,7 +65,7 @@ public class OrderControllerImpl implements OrderController {
     }
 
     @Override
-    @PostMapping("/successReport/{orderId}/passegers-loading")
+    @PostMapping("/successReport/{orderId}/passengers-loading")
     public void reportSuccessOrderFromPassengersLoading(@PathVariable Long orderId) {
 
         log.info("Получен отчёт о выполнении заказа от passegers-loading по id заказу равному %d".formatted(orderId));
@@ -105,8 +105,8 @@ public class OrderControllerImpl implements OrderController {
     @PostMapping("/order-from-registration")
     public void getOrderRequestFromRegistration(@RequestBody RequestFromRegistration requestFromRegistration) {
 
-
-        log.info("Пришёл заказ от регистрации с planeId = %d".formatted(requestFromRegistration.getFlightId()));
+        System.out.println(requestFromRegistration);
+        log.info("Пришёл заказ от регистрации с planeId = %d".formatted(requestFromRegistration.getPlaneId()));
 
         orderService.requestOrderToCateringAndPBCLoad(requestFromRegistration);
     }

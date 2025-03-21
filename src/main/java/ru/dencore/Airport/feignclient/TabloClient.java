@@ -13,7 +13,7 @@ public interface TabloClient {
     /**
      * Отправить отчёт о самолёте, который прошёл разгрузку и готов для регистрации
      */
-    @PutMapping("/dep-board/api/v1/airplanes/{airplaneId}/ready")
+    @PostMapping("/dep-board/api/v1/airplanes/{airplaneId}/ready")
     void successReport(@PathVariable Integer airplaneId);
 
 }

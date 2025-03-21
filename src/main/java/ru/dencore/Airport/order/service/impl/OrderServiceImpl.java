@@ -33,7 +33,8 @@ public class OrderServiceImpl implements OrderService {
     private final MicroserviceManager microserviceManager;
 
     private final TankerTruckClient tankerTruckClient;
-    private final PassengerAndBaggageClient passengerAndBaggageClient;
+    private final PassengerClient passengerClient;
+    private final BaggageClient baggageClient;
     private final FollowMeClient followMeClient;
     private final CateringClient cateringClient;
     private final TabloClient tabloClient;
@@ -85,47 +86,15 @@ public class OrderServiceImpl implements OrderService {
 
 
     @Override
-    public void requestPermissionToLand(Order order) {
-
-        List<Integer> dataForLand = dispatcherClient.requestPermission(order.getPlaneId());
-
-        // 1 значение - куда самолет приземлится
-        // 2 значение - место в которое самолет должен прибыть для обслуживания
-
-        log.info("Для самолёта с id = %d диспетчер прислал следующие данные для посадки %s".formatted(order.getPlaneId(), dataForLand));
-
-
-        // отправляем данные для посадки самолёту
-        planeClient.sendLandingApprovalData(dataForLand);
-
-        if (dataForLand.get(0) == -1) {
-
-            log.info("Диспетчер не дал разрешение на посадку самолёта с id = %d".formatted(order.getPlaneId()));
-
-            order.setStatus(Status.NO_PERMISSION);
-            order.setTimeFinish(LocalDateTime.now());
-
-            orderRepository.save(order);
-
-        } else {
-
-            // отдаём заказ на follow-me
-            requestOrderToFollowMe(order);
-        }
-
-
-    }
-
-    @Override
     public void requestOrderToFollowMe(Order order) {
 
-        order.setStatus(Status.DURING_FOLLOW_ME);
-        Order orderSaved = orderRepository.save(order);
+//        order.setStatus(Status.DURING_FOLLOW_ME);
+//        Order orderSaved = orderRepository.save(order);
 
         // отправляем заказ на follow me
         CompletableFuture.runAsync(() -> {
-            log.info("Отдаём заказ на самолёт с id = %d на follow me".formatted(orderSaved.getPlaneId()));
-            followMeClient.processOrder(orderSaved.getId(), orderSaved.getPlaneId());
+            log.info("Отдаём заказ на самолёт с id = %d на follow me".formatted(order.getPlaneId()));
+            followMeClient.processOrder(order.getId(), order.getPlaneId());
         });
 
 
@@ -169,7 +138,7 @@ public class OrderServiceImpl implements OrderService {
 
             log.info("Отдаём заказ с id заказа = %d и id самолёта = %d на разгрузку багажа".formatted(orderSaved.getId(), orderSaved.getPlaneId()));
 
-            passengerAndBaggageClient.requestOrderToPassengersDischarge(orderRequest);
+            baggageClient.requestOrderToBaggageDischarge(orderRequest);
         });
 
 
@@ -179,7 +148,7 @@ public class OrderServiceImpl implements OrderService {
 
             log.info("Отдаём заказ с id заказа = %d и id самолёта = %d на разгрузку пассажиров".formatted(orderSaved.getId(), orderSaved.getPlaneId()));
 
-            passengerAndBaggageClient.requestOrderToPassengersDischarge(orderRequest);
+            passengerClient.requestOrderToPassengersDischarge(orderRequest);
         });
 
 
@@ -204,7 +173,7 @@ public class OrderServiceImpl implements OrderService {
     @Override
     public void requestOrderToCateringAndPBCLoad(RequestFromRegistration requestFromRegistration) {
 
-        Order order = orderRepository.findByPlaneId(requestFromRegistration.getFlightId()).orElseThrow(() -> new NotFoundException(("Заказ с planeId = %d не существует").formatted(requestFromRegistration.getFlightId())));
+        Order order = orderRepository.findByPlaneId(requestFromRegistration.getPlaneId()).orElseThrow(() -> new NotFoundException(("Заказ с planeId = %d не существует").formatted(requestFromRegistration.getPlaneId())));
 
         // нужно раздать заказ на службу питания на загрузку
         LoadOrderRequest loadOrderRequest = LoadOrderRequest.builder()
@@ -231,7 +200,7 @@ public class OrderServiceImpl implements OrderService {
 
             log.info("Отдаём заказ с id заказа = %d и id самолёта = %d на службу загрузки багажа".formatted(order.getId(), order.getPlaneId()));
 
-            passengerAndBaggageClient.requestOrderToBaggageLoading(orderRequest);
+            baggageClient.requestOrderToBaggageLoading(orderRequest);
 
         });
 
@@ -247,7 +216,7 @@ public class OrderServiceImpl implements OrderService {
         CompletableFuture.runAsync(() -> {
 
             log.info("Отдаём заказ с id заказа = %d и id самолёта = %d на службу загрузки пассажиров".formatted(order.getId(), order.getPlaneId()));
-            passengerAndBaggageClient.requestOrderToPassengersLoading(loadingPassengersRequest);
+            passengerClient.requestOrderToPassengersLoading(loadingPassengersRequest);
         });
 
 
@@ -286,8 +255,7 @@ public class OrderServiceImpl implements OrderService {
 
             for (Order order : orderList) {
 
-                //TODO: поправить метод, когда станет известно сигнатура
-                planeClient.sendOrderToFly();
+                planeClient.sendOrderToFly(order.getPlaneId());
                 order.setStatus(Status.SENDED);
                 orderRepository.save(order);
 

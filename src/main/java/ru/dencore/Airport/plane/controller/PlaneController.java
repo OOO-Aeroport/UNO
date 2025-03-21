@@ -8,6 +8,6 @@ public interface PlaneController {
     /**
      * Получить уведомление о спавне самолёта
      */
-    void createPlane(Integer fuel, Long planeId);
+    void createPlane(Integer fuel, Integer planeId);
 
 }

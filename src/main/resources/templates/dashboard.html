@@ -38,22 +38,22 @@
                         </div>
                     `).join('');
                 });
-
-            fetch('/uno/api/v1/microservice/getAllMicroservices')
-                .then(response => response.json())
-                .then(data => {
-                    const microservicesDiv = document.getElementById('microservices');
-                    microservicesDiv.innerHTML = data.map(ms => `
-                        <div>
-                            <p>ID: ${ms.id}</p>
-                            <p>Name: ${ms.name}</p>
-                            <p>Start Time: ${ms.startTime}</p>
-                            <p>Finish Time: ${ms.finishTime}</p>
-                            <p>Order ID: ${ms.order.id}</p>
-                            <hr>
-                        </div>
-                    `).join('');
-                });
+            //
+            // fetch('/uno/api/v1/microservice/getAllMicroservices')
+            //     .then(response => response.json())
+            //     .then(data => {
+            //         const microservicesDiv = document.getElementById('microservices');
+            //         microservicesDiv.innerHTML = data.map(ms => `
+            //             <div>
+            //                 <p>ID: ${ms.id}</p>
+            //                 <p>Name: ${ms.name}</p>
+            //                 <p>Start Time: ${ms.startTime}</p>
+            //                 <p>Finish Time: ${ms.finishTime}</p>
+            //                 <p>Order ID: ${ms.order.id}</p>
+            //                 <hr>
+            //             </div>
+            //         `).join('');
+            //     });
         }
 
 
@@ -69,10 +69,10 @@
         <h2>Orders</h2>
         <div id="orders" class="scrollable"></div>
     </div>
-    <div class="column">
-        <h2>Microservices</h2>
-        <div id="microservices" class="scrollable"></div>
-    </div>
+<!--    <div class="column">-->
+<!--        <h2>Microservices</h2>-->
+<!--        <div id="microservices" class="scrollable"></div>-->
+<!--    </div>-->
 </div>
 </body>
 </html>

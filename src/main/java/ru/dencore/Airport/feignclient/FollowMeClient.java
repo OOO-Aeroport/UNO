@@ -9,7 +9,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 /**
  * Клиент для взаимодействия со службой Follow Me
  */
-@FeignClient(name = "follow-me-client", url = "http://26.34.23.177:5555")
+@FeignClient(name = "follow-me-client", url = "http://26.34.23.177:4444")
 public interface FollowMeClient {
 
     /**

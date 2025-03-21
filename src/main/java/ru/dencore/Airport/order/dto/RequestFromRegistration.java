@@ -10,9 +10,10 @@ import java.util.List;
 @Getter
 @AllArgsConstructor
 @Builder
+@ToString
 public class RequestFromRegistration {
 
-    private Integer flightId;
+    private Integer planeId;
 
     private Integer baggage;
 
